@@ -54,12 +54,12 @@ def test_patch():
 
 
 def test_url_converter():
+    url = '/typing/{}/{}/'
     for type_, wrong_var, correct_var in [
         ('int', 'asdfsdf', '1'),
         ('float', 'sdfad', '1.1'),
         ('uuid', '10', '1f5018ba-1a86-4f7f-a6c5-596674562f36')
     ]:
-        url = '/typing/{}/{}/'
         resp = client.get(url.format(type_, wrong_var))
         # should not match the endpoint if url variable type mismatches
         eq_(resp.status_code, 404)

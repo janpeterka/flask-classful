@@ -24,7 +24,7 @@ def find_version(*file_paths):
     got_file = get_file(*file_paths)
     for line in got_file:
         if re.match('__version__ = .+', line):
-            return re.search(r'\d.+\d', line).group(0)
+            return re.search(r'\d.+\d', line)[0]
     raise RuntimeError('Unable to find string version')
 
 # allow setup.py to be run from any path

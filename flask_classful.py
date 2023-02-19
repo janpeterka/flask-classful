@@ -254,10 +254,7 @@ class FlaskView(object):
         :param name: the name of the method to create a proxy for
         """
 
-        if init_argument is None:
-            i = cls()
-        else:
-            i = cls(init_argument)
+        i = cls() if init_argument is None else cls(init_argument)
         view = getattr(i, name)
 
         # Since the view is a bound instance method,
@@ -268,6 +265,7 @@ class FlaskView(object):
             def inner(*args, **kwargs):
                 return fn(*args, **kwargs)
             return inner
+
         view = make_func(view)
 
         # Keep a reference to the class for potential use inside decorators
@@ -291,7 +289,7 @@ class FlaskView(object):
                 if response is not None:
                     return response
 
-            before_view_name = "before_" + name
+            before_view_name = f"before_{name}"
             if hasattr(i, before_view_name):
                 before_view = getattr(i, before_view_name)
                 response = before_view(**request.view_args)
@@ -335,7 +333,7 @@ class FlaskView(object):
                 # the key appropriately
                 response = make_response(response, code, headers)
 
-            after_view_name = "after_" + name
+            after_view_name = f"after_{name}"
             if hasattr(i, after_view_name):
                 after_view = getattr(i, after_view_name)
                 response = after_view(response)
@@ -365,8 +363,7 @@ class FlaskView(object):
         if cls.route_prefix:
             rule_parts.append(cls.route_prefix)
 
-        route_base = cls.get_route_base()
-        if route_base:
+        if route_base := cls.get_route_base():
             rule_parts.append(route_base)
         if len(rule) > 0:  # the case of rule='' empty string
             rule_parts.append(rule)
@@ -380,17 +377,15 @@ class FlaskView(object):
             query_params = argspec[3]  # All default args should be ignored
             annotations = getattr(argspec, 'annotations', {})
             for i, arg in enumerate(args):
-                if arg not in ignored_rule_args:
-                    if not query_params or len(args) - i > len(query_params):
-                        # This isn't optional param, so it's not query argument
-                        rule_part = "<{0!s}>".format(arg)
+                if arg not in ignored_rule_args and (
+                    not query_params or len(args) - i > len(query_params)
+                ):
+                    # This isn't optional param, so it's not query argument
+                    rule_part = "<{0!s}>".format(arg)
+                    if type_str := cls.type_hints.get(annotations.get(arg)):
                         if not _py2:
-                            # in py3, try to determine url variable converters
-                            # from possible type hints
-                            type_str = cls.type_hints.get(annotations.get(arg))
-                            if type_str:
-                                rule_part = "<{}:{}>".format(type_str, arg)
-                        rule_parts.append(rule_part)
+                            rule_part = f"<{type_str}:{arg}>"
+                    rule_parts.append(rule_part)
         result = "/{0!s}".format("/".join(rule_parts))
         return re.sub(r'(/)\1+', r'\1', result)
 
@@ -415,12 +410,11 @@ class FlaskView(object):
     @classmethod
     def default_route_base(cls):
 
-        if cls.__name__.endswith("View"):
-            route_base = _dashify_uppercase(cls.__name__[:-4])
-        else:
-            route_base = _dashify_uppercase(cls.__name__)
-
-        return route_base
+        return (
+            _dashify_uppercase(cls.__name__[:-4])
+            if cls.__name__.endswith("View")
+            else _dashify_uppercase(cls.__name__)
+        )
 
     @classmethod
     def build_route_name(cls, method_name):
@@ -451,17 +445,21 @@ def get_interesting_members(base_class, cls):
     base_members = dir(base_class)
     predicate = inspect.ismethod if _py2 else inspect.isfunction
     all_members = inspect.getmembers(cls, predicate=predicate)
-    return [member for member in all_members
-            if not member[0] in base_members
-            and (
-                (hasattr(member[1], "__self__")
-                 and not member[1].__self__ in inspect.getmro(cls))
-                if _py2 else True
-            )
-            and not member[0].startswith("_")
-            and not member[0].startswith("before_")
-            and not member[0].startswith("after_")
-            and not member[0] in cls.excluded_methods]
+    return [
+        member
+        for member in all_members
+        if member[0] not in base_members
+        and (
+            hasattr(member[1], "__self__")
+            and member[1].__self__ not in inspect.getmro(cls)
+            if _py2
+            else True
+        )
+        and not member[0].startswith("_")
+        and not member[0].startswith("before_")
+        and not member[0].startswith("after_")
+        and member[0] not in cls.excluded_methods
+    ]
 
 
 def get_true_argspec(method):
@@ -473,11 +471,9 @@ def get_true_argspec(method):
     # https://github.com/python/cpython/blob/master/Lib/inspect.py#L1127
     # getargspec is deprecated in python 3.
 
-    if not _py2:
-        argspec = inspect.getfullargspec(method)
-    else:
-        argspec = inspect.getargspec(method)
-
+    argspec = (
+        inspect.getargspec(method) if _py2 else inspect.getfullargspec(method)
+    )
     args = argspec[0]
     if args and args[0] == 'self':
         return argspec
@@ -491,14 +487,15 @@ def get_true_argspec(method):
         inner_method = cell.cell_contents
         if inner_method is method:
             continue
-        if hasattr(method, '__wrapped__'):
-            if inner_method is not method.__wrapped__:
-                continue
+        if (
+            hasattr(method, '__wrapped__')
+            and inner_method is not method.__wrapped__
+        ):
+            continue
         if not inspect.isfunction(inner_method)\
            and not inspect.ismethod(inner_method):
             continue
-        true_argspec = get_true_argspec(inner_method)
-        if true_argspec:
+        if true_argspec := get_true_argspec(inner_method):
             return true_argspec
 
 

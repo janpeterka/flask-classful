@@ -11,8 +11,7 @@ def output_json(data, code, headers=None):
         headers.update({'Content-Type': content_type})
     else:
         headers = {'Content-Type': content_type}
-    response = make_response(dumped, code, headers)
-    return response
+    return make_response(dumped, code, headers)
 
 
 def output_default(data, code, headers=None):
@@ -22,8 +21,7 @@ def output_default(data, code, headers=None):
         headers.update({'Content-Type': 'flask-classful/default'})
     else:
         headers = {'Content-Type': 'flask-classful/default'}
-    response = make_response(dumped, code, headers)
-    return response
+    return make_response(dumped, code, headers)
 
 
 # Test Responses

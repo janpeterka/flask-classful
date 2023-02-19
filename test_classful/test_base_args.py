@@ -80,10 +80,7 @@ class QuotesView(FlaskView):
 
     def get(self, id):
         quote_id = int(id)
-        if quote_id < len(quotes) - 1:
-            return quotes[quote_id]
-        else:
-            return "Not Found", 404
+        return quotes[quote_id] if quote_id < len(quotes) - 1 else ("Not Found", 404)
 
     @use_args(put_args)
     def put(self, args, id):
@@ -112,10 +109,7 @@ class UglyNameView(FlaskView):
 
     def get(self, id):
         quote_id = int(id)
-        if quote_id < len(quotes) - 1:
-            return quotes[quote_id]
-        else:
-            return "Not Found", 404
+        return quotes[quote_id] if quote_id < len(quotes) - 1 else ("Not Found", 404)
 
     @use_args(put_args)
     def put(self, args, id):
