@@ -18,19 +18,19 @@ class BasicView(FlaskView):
         return "Index"
 
     def get(self, obj_id):
-        return "Get " + obj_id, 404
+        return f"Get {obj_id}", 404
 
     def put(self, id):
-        return "Put " + id, 403, {'say': 'hello'}
+        return f"Put {id}", 403, {'say': 'hello'}
 
     def patch(self, id):
-        return "Patch " + id
+        return f"Patch {id}"
 
     def post(self):
         return "Post"
 
     def delete(self, id):
-        return "Delete " + id
+        return f"Delete {id}"
 
     def custom_method(self):
         return "Custom Method"
@@ -123,7 +123,7 @@ class VarBaseView(FlaskView):
         return "Custom routed."
 
     def with_base_arg(self, route):
-        return "Base route arg: " + route
+        return f"Base route arg: {route}"
 
     @route('/local/<route_local>', methods=['GET'])
     def with_route_arg(self, route, route_local):
@@ -244,7 +244,7 @@ class DecoratedView(FlaskView):
 
     @func_decorator
     def get(self, id):
-        return "Get " + id
+        return f"Get {id}"
 
     @recursive_decorator
     def post(self):
@@ -256,7 +256,7 @@ class DecoratedView(FlaskView):
 
     @params_decorator(get_value(), "value")
     def delete(self, obj_id):
-        return "Params Decorator Delete " + obj_id
+        return f"Params Decorator Delete {obj_id}"
 
     @more_recursive(None)
     def get_some(self):
@@ -275,24 +275,24 @@ class DecoratedView(FlaskView):
 
     @more_recursive(None)
     def someval(self, val):
-        return "Someval " + val
+        return f"Someval {val}"
 
     @route('/anotherval/<val>')
     @more_recursive(None)
     @recursive_decorator
     def anotherval(self, val):
-        return "Anotherval " + val
+        return f"Anotherval {val}"
 
 
 class InheritanceView(BasicView):
 
     # Tests method override
     def get(self, obj_id):
-        return "Inheritance Get " + obj_id
+        return f"Inheritance Get {obj_id}"
 
     @route('/<obj_id>/delete', methods=['DELETE'])
     def delete(self, obj_id):
-        return "Inheritance Delete " + obj_id
+        return f"Inheritance Delete {obj_id}"
 
     @route('/with_route')
     def with_route(self):
@@ -303,7 +303,7 @@ class DecoratedInheritanceView(DecoratedView):
 
     @recursive_decorator
     def get(self, obj_id):
-        return "Decorated Inheritance Get " + obj_id
+        return f"Decorated Inheritance Get {obj_id}"
 
 
 class TrailingSlashView(FlaskView):
@@ -315,13 +315,13 @@ class TrailingSlashView(FlaskView):
         return "Index"
 
     def get(self, obj_id):
-        return "Get " + obj_id
+        return f"Get {obj_id}"
 
     def put(self, id):
-        return "Put " + id
+        return f"Put {id}"
 
     def patch(self, id):
-        return "Patch " + id
+        return f"Patch {id}"
 
     # def post(self):
     #     return "Post"
@@ -331,7 +331,7 @@ class TrailingSlashView(FlaskView):
         return "Post"
 
     def delete(self, id):
-        return "Delete " + id
+        return f"Delete {id}"
 
     def custom_method(self):
         return "Custom Method"
@@ -370,7 +370,7 @@ class EnabledHasTrailingSlashView(FlaskView):
         return "Index"
 
     def get(self, obj_id):
-        return "Get " + obj_id
+        return f"Get {obj_id}"
 
 
 class EnabledNoTrailingSlashView(FlaskView):
@@ -380,7 +380,7 @@ class EnabledNoTrailingSlashView(FlaskView):
         return "Index"
 
     def get(self, obj_id):
-        return "Get " + obj_id
+        return f"Get {obj_id}"
 
 
 class JSONifyTestView(FlaskView):
@@ -420,7 +420,8 @@ def make_bold_decorator(fn):
     """Wraps a view function with Bold"""
     @wraps(fn)
     def inner(*args, **kwargs):
-        return '<b>' + fn(*args, **kwargs) + '</b>'
+        return f'<b>{fn(*args, **kwargs)}</b>'
+
     return inner
 
 
@@ -428,7 +429,8 @@ def make_italics_decorator(fn):
     """Wraps a view function with Italics"""
     @wraps(fn)
     def inner(*args, **kwargs):
-        return '<i>' + fn(*args, **kwargs) + '</i>'
+        return f'<i>{fn(*args, **kwargs)}</i>'
+
     return inner
 
 
@@ -436,7 +438,8 @@ def make_paragraph_decorator(fn):
     """Wraps a view function with Paragraph"""
     @wraps(fn)
     def inner(*args, **kwargs):
-        return '<p>' + fn(*args, **kwargs) + '</p>'
+        return f'<p>{fn(*args, **kwargs)}</p>'
+
     return inner
 
 
@@ -570,11 +573,7 @@ class DecoratedAppendClassAttributeView(FlaskView):
 class InspectArgsView(FlaskView):
 
     def foo(self, arg1, arg2, kwarg1=678):
-        return 'foo %s(%s) %s(%s) %s(%s)' % (
-            type(arg1).__name__, arg1,
-            type(arg2).__name__, arg2,
-            type(kwarg1).__name__, kwarg1
-        )
+        return f'foo {type(arg1).__name__}({arg1}) {type(arg2).__name__}({arg2}) {type(kwarg1).__name__}({kwarg1})'
 
 class InspectArgsFalseView(FlaskView):
     def foo():
@@ -587,12 +586,14 @@ def coerce(**kwargs):
             params = request.args
             newkw = {}
             for k, func in kwargs.items():
-                if not k in params:
+                if k not in params:
                     continue
                 v = params[k]
                 newkw[k] = func(v)
             return fn(*args, **newkw)
+
         return wrapped
+
     return wrap
 
 
@@ -601,11 +602,7 @@ class NoInspectArgsView(FlaskView):
 
     @coerce(arg1=int, arg2=int, kwarg1=int)
     def foo(self, arg1=1, arg2=2, kwarg1=678):
-        return 'foo %s(%s) %s(%s) %s(%s)' % (
-            type(arg1).__name__, arg1,
-            type(arg2).__name__, arg2,
-            type(kwarg1).__name__, kwarg1
-        )
+        return f'foo {type(arg1).__name__}({arg1}) {type(arg2).__name__}({arg2}) {type(kwarg1).__name__}({kwarg1})'
 
 
 class DefaultMethodsView(FlaskView):
